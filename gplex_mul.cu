@@ -213,6 +213,31 @@ __global__ void raw_reg_c_mult_kn(const float* a, const float* b,
   }
 }
 
+__global__ void raw_reg_c_mult_noop_kn(const float* a, const float* b, 
+    float* c, const int N)
+{
+
+  int nN = 1000;
+  for (int oLoop = 0; oLoop< nN; ++oLoop){
+    for (int n = threadIdx.x + blockIdx.x * blockDim.x;
+         n < N;
+         n += blockDim.x * gridDim.x) {
+      
+      for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 6; ++j) {
+          float c_tmp = 0;
+          float a_tmp = 1.f;
+          float b_tmp = 1.5f;
+          for (int k = 0; k < 6; ++k) {
+            c_tmp += a_tmp * b_tmp;
+          }
+          c[n + N*(i + 6*j)] += c_tmp;
+        }
+      }
+    }
+  }//oLoop< nN; ++oLoop){
+}
+
 __global__ void raw_shared_mult_kn(const float* a, const float* b, float* c, const int N)
 {
   for (int n = threadIdx.x + blockIdx.x * blockDim.x;
@@ -321,6 +346,8 @@ void raw_run_naive_mul(int N, int iter, bool pauseProf)
   for (int i = 0; i < iter; ++i)
     raw_reg_mult_kn <<< grid, block >>> (a, b, c, N);
   if (pauseProf) cudaProfilerStop();
+  cudaCheckErrorSync();
+  raw_reg_c_mult_noop_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
 
   std::vector<float> h_c (N);
