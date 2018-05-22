@@ -213,11 +213,11 @@ __global__ void raw_reg_c_mult_kn(const float* a, const float* b,
   }
 }
 
-__global__ void raw_reg_c_mult_loop_kn(const float* a, const float* b, 
+__global__ void raw_reg_c_mult_loop_kn(const float* const a, const float* const b, 
     float* c, const int N)
 {
 
-  int nN = 100;
+  int nN = 1000;
   for (int oLoop = 0; oLoop< nN; ++oLoop){
     for (int n = threadIdx.x + blockIdx.x * blockDim.x;
          n < N;
