@@ -217,7 +217,7 @@ __global__ void raw_reg_c_mult_noop_kn(const float* a, const float* b,
     float* c, const int N)
 {
 
-  int nN = 1000;
+  int nN = 10000;
   for (int oLoop = 0; oLoop< nN; ++oLoop){
     for (int n = threadIdx.x + blockIdx.x * blockDim.x;
          n < N;
@@ -231,7 +231,7 @@ __global__ void raw_reg_c_mult_noop_kn(const float* a, const float* b,
           for (int k = 0; k < 6; ++k) {
             c_tmp += a_tmp * b_tmp;
           }
-          c[n + N*(i + 6*j)] += c_tmp;
+          // c[n + N*(i + 6*j)] += c_tmp;
         }
       }
     }
