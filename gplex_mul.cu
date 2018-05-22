@@ -77,6 +77,34 @@ __global__ void raw_shared_mult_kn(const float* a, const float* b, float* c, con
   }
 }
 
+__global__ void raw_reg_mult_kn(const float* a, const float* b, float* c, const int N)
+{
+  for (int n = threadIdx.x + blockIdx.x * blockDim.x;
+      n < N;
+      n += blockDim.x * gridDim.x) {
+
+    float reg_a[36];
+    float reg_b[36];
+
+    for (int i = 0; i < 36; ++i) {
+      reg_a[i] = a[n + 36*i];
+    }
+    for (int i = 0; i < 36; ++i) {
+      reg_b[i] = b[n + 36*i];
+    }
+
+    for (int i = 0; i < 6; ++i) {
+      for (int j = 0; j < 6; ++j) {
+        float c_tmp = 0;
+        for (int k = 0; k < 6; ++k) {
+          c_tmp += reg_a[i+6*k] * reg_b[k+6+j];
+        }
+        c[n + N*(i + 6*j)] += c_tmp;
+      }
+    }
+  }
+}
+
 
 void raw_run_naive_mul(int N)
 {
@@ -105,6 +133,8 @@ void raw_run_naive_mul(int N)
   raw_reg_c_mult_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
   raw_shared_mult_kn <<< grid, block >>> (a, b, c, N);
+  cudaCheckErrorSync();
+  raw_reg_mult_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
 
   std::vector<float> h_c (N);
