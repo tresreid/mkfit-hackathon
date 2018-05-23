@@ -6,7 +6,7 @@
 #include <vector>
 #include <iostream>
 
-constexpr int block_size = 32;
+constexpr int block_size = 64;
 
 template <typename GPlex>
 __global__ void set_mem(GPlex a, float val,size_t N) {
