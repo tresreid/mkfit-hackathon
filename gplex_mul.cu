@@ -6,7 +6,7 @@
 #include <vector>
 #include <iostream>
 
-constexpr int block_size = 64;
+constexpr int block_size = 32;
 
 template <typename GPlex>
 __global__ void set_mem(GPlex a, float val,size_t N) {
@@ -223,13 +223,20 @@ __global__ void raw_reg_c_mult_loop_kn(const float* const a, const float* const 
          n < N;
          n += blockDim.x * gridDim.x) {
       
+      float a_ar[36];
+      float b_ar[36];
+      for (int i = 0; i < 36; ++i){
+        const int idx = n + N*i;
+        a_ar[i] = a[idx];
+        b_ar[i] = b[idx];
+      }
       for (int i = 0; i < 6; ++i) {
         for (int j = 0; j < 6; ++j) {
           float c_tmp = 0.f;
           for (int k = 0; k < 6; ++k) {
-            c_tmp += a[n + N*(i + 6*k)] * b[n + N*(k + 6*j)];
+            c_tmp += a_ar[i + 6*k] * b_ar[k + 6*j];
           }
-          c[n + N*(i + 6*j)] += c_tmp;
+          c[n + N*(i + 6*j)] = c_tmp;
         }
       }
     }
