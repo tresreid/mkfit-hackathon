@@ -4,7 +4,7 @@
 int main() {
 
   {
-    size_t testN = 3584;
+    size_t testN = 7168;
     int testIter = 1;
     bool pauseProf = false;
 
