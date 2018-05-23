@@ -52,7 +52,7 @@ __global__ void reg_c_mult_kn(const __restrict__ GPlexNM a, const __restrict__ G
         for (int k = 0; k < GPlexNM::kCols; ++k) {
           c_tmp += a(n, i, k) * b(n, k, j);
         }
-        c(n, i, j) += c_tmp;
+        c(n, i, j) = c_tmp;
       }
     }
   }
@@ -88,7 +88,7 @@ __global__ void shared_mult_kn(const __restrict__ GPlexNM a, const __restrict__ 
           /*c_tmp += sh_a[0][tix] ;*/
             /** sh_b[j + GPlexMP::kCols * k][tix];*/
         }
-        c(n, i, j) += c_tmp;
+        c(n, i, j) = c_tmp;
       }
     }
   }
@@ -117,7 +117,7 @@ __global__ void reg_mult_kn(const __restrict__ GPlexNM a, const __restrict__ GPl
         for (int k = 0; k < GPlexNM::kCols; ++k) {
           c_tmp += reg_a(n, i, k) * reg_b(n, k, j);
         }
-        c(n, i, j) += c_tmp;
+        c(n, i, j) = c_tmp;
       }
     }
   }
