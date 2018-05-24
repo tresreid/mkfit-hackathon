@@ -30,6 +30,14 @@ public:
    };
 
    T fArray[kTotSize] __attribute__((aligned(64)));
+
+   const T& ConstAt(idx_t n, idx_t i, idx_t j) const { return fArray[(i * D2 + j) * N + n]; }
+
+   T& At(idx_t n, idx_t i, idx_t j) { return fArray[(i * D2 + j) * N + n]; }
+
+   T& operator()(idx_t n, idx_t i, idx_t j) { return fArray[(i * D2 + j) * N + n]; }
+   const T& operator()(idx_t n, idx_t i, idx_t j) const { return fArray[(i * D2 + j) * N + n]; }
+
 };
 
 
@@ -92,19 +100,14 @@ struct GPlex {
   //cudaMemcpy2D(d_msErr.ptr, d_msErr.pitch, msErr.fArray, N*sizeof(T),
                //N*sizeof(T), HS, cudaMemcpyHostToDevice);
 
-  void copyAsyncFromHost(cudaStream_t& stream, const M& mplex) {
-    cudaMemcpy2DAsync(ptr, pitch, mplex.fArray, N*sizeof(T),
-                      N*sizeof(T), kSize, cudaMemcpyHostToDevice, stream);
+  void copyFromHost(const M& mplex) {
+    cudaMemcpy2D(ptr, pitch, mplex.fArray, N*sizeof(T),
+                 N*sizeof(T), kSize, cudaMemcpyHostToDevice);
     cudaCheckError();
   }
-  void copyAsyncToHost(cudaStream_t& stream, M& mplex) {
-    cudaMemcpy2DAsync(mplex.fArray, N*sizeof(T), ptr, pitch,
-                      N*sizeof(T), kSize, cudaMemcpyDeviceToHost, stream);
-    cudaCheckError();
-  }
-  void copyAsyncFromDevice(cudaStream_t& stream, GPlex<M>& gplex) {
-    cudaMemcpy2DAsync(ptr, pitch, gplex.ptr, gplex.pitch,
-                      N*sizeof(T), kSize, cudaMemcpyDeviceToDevice, stream);
+  void copyToHost(M& mplex) {
+    cudaMemcpy2D(mplex.fArray, N*sizeof(T), ptr, pitch,
+                 N*sizeof(T), kSize, cudaMemcpyDeviceToHost);
     cudaCheckError();
   }
 };
