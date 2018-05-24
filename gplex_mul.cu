@@ -1,5 +1,6 @@
 #define CUB_STDERR
 #include "gpu_utils.h"
+#include "gplex_mul.h"
 #include "cuda_profiler_api.h"
 #include "GPlex.h"
 
@@ -177,8 +178,8 @@ void run_naive_mul(int N, int iter, bool pauseProf)
   cudaCheckErrorSync();
 }
 
-__global__ void raw_naive_mult_kn(const float* a,
-    const float* b, float* c, const int N)
+__global__ void raw_naive_mult_kn(const float* __restrict__ a,
+    const float* __restrict__ b, float* __restrict__ c, const int N)
 {
   for (int n = threadIdx.x + blockIdx.x * blockDim.x;
        n < N;
@@ -194,7 +195,7 @@ __global__ void raw_naive_mult_kn(const float* a,
   }
 }
 
-__global__ void raw_reg_c_mult_kn(const float* a, const float* b, 
+__global__ void raw_reg_c_mult_kn(const float* __restrict__ a, const float* __restrict__ b, 
     float* c, const int N)
 {
   for (int n = threadIdx.x + blockIdx.x * blockDim.x;
@@ -213,7 +214,7 @@ __global__ void raw_reg_c_mult_kn(const float* a, const float* b,
   }
 }
 
-__global__ void raw_shared_mult_kn(const float* a, const float* b, float* c, const int N)
+__global__ void raw_shared_mult_kn(const float* __restrict__ a, const float* __restrict__ b, float* c, const int N)
 {
   for (int n = threadIdx.x + blockIdx.x * blockDim.x;
        n < N;
@@ -248,7 +249,7 @@ __global__ void raw_shared_mult_kn(const float* a, const float* b, float* c, con
   }
 }
 
-__global__ void raw_reg_mult_kn(const float* a, const float* b, float* c, const int N)
+__global__ void raw_reg_mult_kn(const float* __restrict__ a, const float* __restrict__ b, float* c, const int N)
 {
   for (int n = threadIdx.x + blockIdx.x * blockDim.x;
       n < N;
@@ -332,4 +333,79 @@ void raw_run_naive_mul(int N, int iter, bool pauseProf)
   cudaFree(c);
   cudaCheckErrorSync();
 }
+
+#ifdef EIGEN_TEST
+#include <Eigen/Dense>
+
+using Matrix66 = Eigen::Matrix<float, 6, 6, Eigen::AutoAlign>;
+
+__global__ void eigen_reg_c_mult_kn(const Matrix66* __restrict__ a, const Matrix66* __restrict__ b, Matrix66* c, const int N)
+{
+  for (int n = threadIdx.x + blockIdx.x * blockDim.x;
+       n < N;
+       n += blockDim.x * gridDim.x) {
+
+    Matrix66 c_reg;
+    c_reg = a[n] * b[n];
+    c[n] = c_reg;
+  }
+}
+
+__global__ void eigen_reg_mult_kn(const Matrix66* __restrict__ a, const Matrix66* __restrict__ b, Matrix66* c, const int N)
+{
+  for (int n = threadIdx.x + blockIdx.x * blockDim.x;
+       n < N;
+       n += blockDim.x * gridDim.x) {
+
+    Matrix66 a_reg(a[n]), b_reg(b[n]);
+    Matrix66 c_reg(a_reg * b_reg);
+    c[n] = c_reg;
+  }
+}
+
+void eigen_run_naive_mul(int N, int iter, bool pauseProf)
+{
+  /*constexpr int N = 3200000;//10000000;*/
+  /*constexpr int N = 100000;*/
+  Matrix66* a;
+  Matrix66* b;
+  Matrix66* c;
+
+  cudaMalloc((void**)&a, sizeof(Matrix66)*N);
+  cudaMalloc((void**)&b, sizeof(Matrix66)*N);
+  cudaMalloc((void**)&c, sizeof(Matrix66)*N);
+  cudaCheckErrorSync();
+
+
+  dim3 grid (((N-1)/block_size + 1), 1, 1);
+  dim3 block (block_size, 1, 1);
+
+  Matrix66 zero = Matrix66::Zero();
+  Matrix66 one = Matrix66::Constant(1);
+
+  for (int i = 0; i < N; ++i) {
+    cudaMemcpy(a+i, &one, sizeof(Matrix66), cudaMemcpyDefault);
+    cudaMemcpy(b+i, &one, sizeof(Matrix66), cudaMemcpyDefault);
+    cudaMemcpy(c+i, &zero, sizeof(Matrix66), cudaMemcpyDefault);
+  }
+  cudaCheckErrorSync();
+
+  if (pauseProf) cudaProfilerStart();
+  for (int i = 0; i < iter; ++i)
+    eigen_reg_c_mult_kn <<< grid, block >>> (a, b, c, N);
+  if (pauseProf) cudaProfilerStop();
+  cudaCheckErrorSync();
+
+  if (pauseProf) cudaProfilerStart();
+  for (int i = 0; i < iter; ++i)
+    eigen_reg_mult_kn <<< grid, block >>> (a, b, c, N);
+  if (pauseProf) cudaProfilerStop();
+  cudaCheckErrorSync();
+
+  cudaFree(a);
+  cudaFree(b);
+  cudaFree(c);
+  cudaCheckErrorSync();
+}
+#endif
 
