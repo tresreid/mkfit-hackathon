@@ -252,7 +252,7 @@ __global__ void raw_reg_c_mult_loop_kn(const float* RESTRICT const a, const floa
 
 /** like raw_reg_c_mult_loop_kn but with vectorized loads and 
     therefore a different memory layout of the matrix */
-__global__ void raw_reg_c_mult_loop_kn_vl(const float* const a, const float* const b, 
+__global__ void raw_reg_c_mult_loop_kn_vl(const float* RESTRICT const a, const float* RESTRICT const b, 
     float* c, const int N)
 {
 
@@ -285,7 +285,7 @@ __global__ void raw_reg_c_mult_loop_kn_vl(const float* const a, const float* con
 
 /** like raw_reg_c_mult_loop_kn_vl but also using 
     vectorized stores */
-__global__ void raw_reg_c_mult_loop_kn_vl_vs(const float* const a, const float* const b, 
+__global__ void raw_reg_c_mult_loop_kn_vl_vs(const float* RESTRICT const a, const float* RESTRICT const b, 
     float* c, const int N)
 {
   int nN = 1000;
@@ -326,7 +326,7 @@ __global__ void raw_reg_c_mult_loop_kn_vl_vs(const float* const a, const float* 
 /** like raw_reg_c_mult_loop_kn_vl but assuming that the matrix B is 
     transposed thus making the index calculation for matrix A
     and B the same */
-__global__ void raw_reg_c_mult_loop_kn_vl_transp(const float* const a, const float* const b, 
+__global__ void raw_reg_c_mult_loop_kn_vl_transp(const float* RESTRICT const a, const float* RESTRICT const b, 
     float* c, const int N)
 {
 
