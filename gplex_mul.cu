@@ -250,6 +250,39 @@ __global__ void raw_reg_c_mult_loop_kn(const float* RESTRICT const a, const floa
   }//oLoop< nN; ++oLoop){
 }
 
+/** like raw_reg_c_mult_loop_kn but with vectorized loads and 
+    therefore a different memory layout of the matrix */
+__global__ void raw_reg_c_mult_loop_kn_vl(const float* const a, const float* const b, 
+    float* c, const int N)
+{
+
+  int nN = 1000;
+  for (int oLoop = 0; oLoop< nN; ++oLoop){
+    for (int n = threadIdx.x + blockIdx.x * blockDim.x;
+         n < N;
+         n += blockDim.x * gridDim.x) {
+      
+      float a_ar[36];
+      float b_ar[36];
+      for (int i = 0; i < 9; ++i){
+        const int idx = n + N*i;
+        reinterpret_cast<float4*>(a_ar)[i] = reinterpret_cast<const float4*>(a)[idx];
+        reinterpret_cast<float4*>(b_ar)[i] = reinterpret_cast<const float4*>(b)[idx];
+      }
+      
+      for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 6; ++j) {
+          float c_tmp = 0.f;
+          for (int k = 0; k < 6; ++k) {
+            c_tmp += a_ar[i + 6*k] * b_ar[k + 6*j];
+          }
+          c[n + N*(i + 6*j)] = c_tmp;
+        }
+      }
+    }
+  }//oLoop< nN; ++oLoop){
+}
+
 __global__ void raw_reg_c_mult_loop_unroll_kn(const float* RESTRICT const a, const float* RESTRICT const b, 
     float* c, const int N)
 {
@@ -1398,6 +1431,9 @@ void raw_run_naive_mul(int N, int iter)
   raw_reg_c_mult_loop_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
   assert(check(N, c, h));
+
+  raw_reg_c_mult_loop_kn_vl <<< grid, block >>> (a, b, c, N);
+  cudaCheckErrorSync();
 
   raw_reg_c_mult_loop_unroll_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
