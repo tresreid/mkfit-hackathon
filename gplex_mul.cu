@@ -938,7 +938,6 @@ __global__ void raw_reg_c_mult_loop_unroll_const_kn(const float* RESTRICT const 
 __global__ void raw_reg_c_mult_loop_unroll2_const_kn(const float* const a, const float* const b, 
     float* c, const int N)
 {
-  constexpr int NN = 7168;
   constexpr int nN = 1000;
   for (int oLoop = 0; oLoop< nN; ++oLoop){
     for (int n = threadIdx.x + blockIdx.x * blockDim.x;
