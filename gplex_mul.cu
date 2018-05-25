@@ -1043,7 +1043,7 @@ __global__ void raw_reg_c_mult_loop_unroll_const_kn(const float* RESTRICT const 
     The code only values from the memory to local variables (i.e. registers)
     if it has not done so for a previous product.
 */
-__global__ void raw_reg_c_mult_loop_unroll2_const_kn(const float* const a, const float* const b, 
+__global__ void raw_reg_c_mult_loop_unroll2_const_kn(const float* RESTRICT const a, const float* RESTRICT const b, 
     float* c, const int N)
 {
   constexpr int nN = 1000;
