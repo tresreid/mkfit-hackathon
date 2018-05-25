@@ -2,11 +2,27 @@
 
 from __future__ import print_function
 
-metrics = [ "gld_efficiency",
-            "gst_efficiency",
-            "flop_sp_efficiency",
-            "l2_tex_read_hit_rate",
-            "l2_tex_write_hit_rate",
+metrics = [
+    "flop_count_sp",
+    "flop_sp_efficiency",
+    "shared_store_transactions",
+    "shared_load_transactions",
+    "local_load_transactions",
+    "local_store_transactions",
+    "gld_transactions",
+    "gst_transactions",
+    "gld_throughput",
+    "gst_throughput",
+    "gld_requested_throughput",
+    "gld_efficiency",
+    "gst_requested_throughput",
+    "gst_efficiency",
+    "l2_read_transactions",
+    "l2_write_transactions",
+    "l2_utilization",
+    "l1_cache_global_hit_rate",
+    "l1_shared_utilization",
+    "l2_l1_read_hit_rate"
             ]
 
 cmd_parts = [
