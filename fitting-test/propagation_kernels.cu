@@ -383,12 +383,8 @@ __device__ void propagation_fn(
   GPlexRegLL errorProp_reg;
   // If there is more matrices than max_blocks_x * BLOCK_SIZE_X 
   if (n < N) {
-    for (int i = 0; i < inErr.kSize; ++i) {
-      outErr[n + i*outErr.stride] = inErr[n + i*inErr.stride];
-    }
-    for (int i = 0; i < inPar.kSize; ++i) {
-      outPar[n + i*outPar.stride] = inPar[n + i*inPar.stride];
-    }
+    two_steps_copy<7> (outErr, inErr, n);
+    two_steps_copy<6> (outPar, inPar, n);
     for (int i = 0; i < 36; ++i) {
       errorProp_reg[i] = 0.0;
     }
