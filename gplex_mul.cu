@@ -35,7 +35,6 @@ __global__ void naive_mult_kn(const RESTRICT GPlexNM a, const RESTRICT GPlexMP b
        n < N;
        n += blockDim.x * gridDim.x) {
 
-
     for (int i = 0; i < GPlexNM::kRows; ++i) {
       for (int j = 0; j < GPlexMP::kCols; ++j) {
         for (int k = 0; k < GPlexNM::kCols; ++k) {
@@ -139,10 +138,9 @@ bool check(int N, GPlexLL c)
 }
 
 
-void run_naive_mul(int N, int iter)
+void run_naive_mul(int iter)
 {
-  /*constexpr int N = 3200000;//10000000;*/
-  /*constexpr int N = 100000;*/
+  constexpr int N = Nwidth;
   GPlexLL a, b, c;
 
   a.allocate(N);
@@ -158,8 +156,10 @@ void run_naive_mul(int N, int iter)
   set_mem <<< grid, block >>> (c, 0.f, N);
   cudaCheckErrorSync();
 
-  for (int i = 0; i < iter; ++i)
+  for (int i = 0; i < iter; ++i) {
+    set_mem <<< grid, block >>> (c, 0.f, N);
     naive_mult_kn <<< grid, block >>> (a, b, c, N);
+  }
   cudaCheckErrorSync();
   assert(check(N, c));
 
@@ -749,7 +749,8 @@ __global__ void raw_reg_c_mult_loop_unroll_kn(const float* RESTRICT const a, con
 __global__ void raw_reg_c_mult_loop_unroll_const_kn(const float* RESTRICT const a, const float* RESTRICT const b, 
     float* c, const int N)
 {
-  constexpr int NN = 7168;
+  constexpr int NN = Nwidth;
+
   int nN = 1000;
   for (int oLoop = 0; oLoop< nN; ++oLoop){
     for (int n = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1512,13 +1513,17 @@ bool check(int N, float* c, float *h)
   const float eps = 1e-30;
   int n = 36*N;
   cudaMemcpy(h, c, n*sizeof(float), cudaMemcpyDeviceToHost);
-  return (std::abs(h[0] - h[36]) < eps) && (std::abs(h[0] - 6.0f) < eps);
+  bool pass = (std::abs(h[0] - h[36]) < eps) && (std::abs(h[0] - 6.0f) < eps);
+  if (!pass) {
+    std::cout << "Fail check h[0]=" << h[0] << " h[36]=" << h[36] << std::endl;
+  }
+  return pass;
 }
 
-void raw_run_naive_mul(int N, int iter)
+void raw_run_naive_mul(int iter)
 {
-  /*constexpr int N = 3200000;//10000000;*/
-  /*constexpr int N = 100000;*/
+  constexpr int N = Nwidth;
+
   float* a;
   float* b;
   float* c;
@@ -1534,8 +1539,10 @@ void raw_run_naive_mul(int N, int iter)
 
   fill(N, a, b, c, h);
 
-  for (int i = 0; i < iter; ++i)
+  for (int i = 0; i < iter; ++i) {
+    cudaMemset(c, 0, 36*N*sizeof(float));
     raw_naive_mult_kn <<< grid, block >>> (a, b, c, N);
+  }
   cudaCheckErrorSync();
   assert(check(N, c, h));
 
@@ -1618,10 +1625,10 @@ __global__ void eigen_reg_mult_kn(const Matrix66* RESTRICT a, const Matrix66* RE
   }
 }
 
-void eigen_run_naive_mul(int N, int iter)
+void eigen_run_naive_mul(int iter)
 {
-  /*constexpr int N = 3200000;//10000000;*/
-  /*constexpr int N = 100000;*/
+  constexpr int N = Nwidth;
+
   Matrix66* a;
   Matrix66* b;
   Matrix66* c;
