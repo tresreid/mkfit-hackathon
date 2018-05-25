@@ -220,6 +220,56 @@ __global__ void raw_reg_c_mult_kn(const float* RESTRICT a, const float* RESTRICT
   }
 }
 
+/* Try to do all from the registers; the code is adjusted to get to 100% FLOP efficiency */
+__global__ void raw_regall_c_mult_loop_kn(const float* RESTRICT a, const float* RESTRICT b,
+                                          float* c, const int N)
+{
+
+  float a_ar[36];
+  float b_ar[36];
+  float c_ar[36];
+  for (int n = threadIdx.x + blockIdx.x * blockDim.x;
+       n < N;
+       n += blockDim.x * gridDim.x) {
+    for (int i = 0; i < 36; ++i){
+      const int idx = n + N*i;
+      a_ar[i] = a[idx];
+      b_ar[i] = b[idx];
+      c_ar[i] = 0.f;
+    }
+  }
+
+  int nN = 10000;
+  for (int n = threadIdx.x + blockIdx.x * blockDim.x;
+       n < N;
+       n += blockDim.x * gridDim.x) {
+
+    for (int oLoop = 0; oLoop< nN; ++oLoop){
+
+      for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 6; ++j) {
+          float c_tmp = 0.f;
+          for (int k = 0; k < 6; ++k) {
+            c_tmp += a_ar[i + 6*k] * b_ar[k + 6*j];
+          }
+          c_ar[i + 6*j] += c_tmp*3.4f;
+        }
+      }
+    }
+  }//oLoop< nN; ++oLoop){
+
+  for (int n = threadIdx.x + blockIdx.x * blockDim.x;
+       n < N;
+       n += blockDim.x * gridDim.x) {
+    for (int i = 0; i < 36; ++i){
+      const int idx = n + N*i;
+      c[idx] = c_ar[i];
+    }
+  }
+
+}
+
+
 __global__ void raw_reg_c_mult_loop_kn(const float* RESTRICT const a, const float* RESTRICT const b, 
     float* c, const int N)
 {
@@ -1502,6 +1552,10 @@ void raw_run_naive_mul(int N, int iter)
   for (int i = 0; i < iter; ++i)
     raw_reg_mult_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
+
+  raw_regall_c_mult_loop_kn <<< grid, block >>> (a, b, c, N);
+  cudaCheckErrorSync();
+  //no checks here because the operations are not the same
 
   raw_reg_c_mult_loop_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
