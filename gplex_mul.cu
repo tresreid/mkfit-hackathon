@@ -1517,7 +1517,9 @@ void raw_run_naive_mul(int N, int iter)
 
   raw_reg_c_mult_loop_kn_vl_transp <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
-  // TODO: adapt check to transposed layout
+  // since this kernel assumes a transposed layout
+  // the check may fail in the future
+  assert(check(N, c, h));
 
   raw_reg_c_mult_loop_unroll_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
@@ -1599,6 +1601,7 @@ void eigen_run_naive_mul(int N, int iter)
 
   raw_reg_c_mult_loop_unroll2_const_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
+  assert(check(N, c, h));
 
   cudaFree(a);
   cudaFree(b);
