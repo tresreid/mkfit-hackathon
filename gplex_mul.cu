@@ -1509,12 +1509,15 @@ void raw_run_naive_mul(int N, int iter)
 
   raw_reg_c_mult_loop_kn_vl <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
+  assert(check(N, c, h));
 
   raw_reg_c_mult_loop_kn_vl_vs <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
+  assert(check(N, c, h));
 
   raw_reg_c_mult_loop_kn_vl_transp <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
+  // TODO: adapt check to transposed layout
 
   raw_reg_c_mult_loop_unroll_kn <<< grid, block >>> (a, b, c, N);
   cudaCheckErrorSync();
