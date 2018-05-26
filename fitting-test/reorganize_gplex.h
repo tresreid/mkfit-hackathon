@@ -1,7 +1,7 @@
 #ifndef REORGANIZE_GPLEX_H
 #define REORGANIZE_GPLEX_H
 
-#include "GPlex.h"
+#include "GPlex/GPlex.h"
 #include "Hit.h"
 #include "HitStructuresCU.h"
 #include "Track.h"

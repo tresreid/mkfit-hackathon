@@ -475,7 +475,7 @@ __device__ void propagationForBuilding_fn(
     /*}*/
     /*similarity_fn(errorProp_reg, outErr, N, n);*/
 
-    // Matriplex version of:
+    // GPlex version of:
     // result.errors = ROOT::Math::Similarity(errorProp, outErr);
 
     //MultHelixProp can be optimized for polar coordinates, see GenMPlexOps.pl

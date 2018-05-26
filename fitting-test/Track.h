@@ -149,7 +149,7 @@ public:
   __device__ float* errArrayCU();
 #endif
 
-  // Non-const versions needed for CopyOut of Matriplex.
+  // Non-const versions needed for CopyOut of GPlex.
   SVector6&     parameters_nc() {return state_.parameters;}
   SMatrixSym66& errors_nc()     {return state_.errors;}
   TrackState&   state_nc()      {return state_;}

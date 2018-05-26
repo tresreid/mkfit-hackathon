@@ -1,7 +1,7 @@
 #ifndef _KALMAN_UPDATER_KERNELS_H_
 #define _KALMAN_UPDATER_KERNELS_H_
 
-#include "GPlex.h"
+#include "GPlex/GPlex.h"
 
 void kalmanUpdate_wrapper(const cudaStream_t& stream,
     GPlexLS& d_propErr, const GPlexHS& d_msErr,

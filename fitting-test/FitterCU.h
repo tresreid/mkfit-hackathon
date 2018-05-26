@@ -6,7 +6,7 @@
 #include "Matrix.h"
 
 #include "HitStructuresCU.h"
-#include "GPlex.h"
+#include "GPlex/GPlex.h"
 #include "GeometryCU.h"
 #include "gpu_utils.h"
 
@@ -21,7 +21,7 @@
 
 #define BLOCK_SIZE_X 256
 
-using idx_t = Matriplex::idx_t;
+using idx_t = GPlexBase::idx_t;
 
 template <typename T>
 class FitterCU {

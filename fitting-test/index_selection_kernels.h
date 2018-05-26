@@ -2,7 +2,7 @@
 #define _INDEX_SELECTION_KERNELS_H_
 
 #include "HitStructuresCU.h"
-#include "GPlex.h"
+#include "GPlex/GPlex.h"
 
 void selectHitIndices_wrapper(const cudaStream_t& stream,
     const LayerOfHitsCU& layer_of_hits, const GPlexLS& Err, const GPlexLV& Par, 

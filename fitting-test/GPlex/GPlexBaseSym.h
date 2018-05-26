@@ -1,17 +1,17 @@
-#ifndef MatriplexSym_H
-#define MatriplexSym_H
+#ifndef GPlexBaseSym_H
+#define GPlexBaseSym_H
 
-#include "MatriplexCommon.h"
-#include "Matriplex.h"
+#include "GPlexBaseCommon.h"
+#include "GPlexBase.h"
 
 //==============================================================================
-// MatriplexSym
+// GPlexBaseSym
 //==============================================================================
 
-namespace Matriplex
+namespace GPlexBase
 {
 template<typename T, idx_t D, idx_t N>
-class MatriplexSym
+class GPlexBaseSym
 {
 public:
    typedef T value_type;
@@ -24,15 +24,11 @@ public:
       kCols = D,
       /// no of elements: lower triangle
       kSize = (D + 1) * D / 2,
-      /// size of the whole matriplex
+      /// size of the whole GPlexBase
       kTotSize = N * kSize
    };
 
    T fArray[kTotSize] __attribute__((aligned(64)));
 };
-
-template<typename T, idx_t D, idx_t N> using MPlexSym = MatriplexSym<T, D, N>;
-
 }
-
 #endif

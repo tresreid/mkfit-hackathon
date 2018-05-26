@@ -1,7 +1,7 @@
 #ifndef _PROPAGATION_KERNELS_H_
 #define _PROPAGATION_KERNELS_H_
 
-#include "GPlex.h"
+#include "GPlex/GPlex.h"
 
 void propagation_wrapper(const cudaStream_t& stream,
     GPlexHV& msPar, GPlexLS& inErr,
