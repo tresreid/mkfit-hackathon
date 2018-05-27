@@ -1,7 +1,7 @@
 #ifndef FITTRACKS_KERNELS_H_G3FDJYTX
 #define FITTRACKS_KERNELS_H_G3FDJYTX
 
-#include "GPlex.h"
+#include "GPlex/GPlex.h"
 
 void fittracks_wrapper(cudaStream_t &stream,
                        GPlexLS &Err_iP, GPlexLV &par_iP, 

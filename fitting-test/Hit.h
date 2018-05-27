@@ -227,7 +227,7 @@ public:
   __device__ float* errArrayCU();
 #endif
 
-  // Non-const versions needed for CopyOut of Matriplex.
+  // Non-const versions needed for CopyOut of GPlex.
   SVector3&     parameters_nc() {return state_.pos_;}
   SVector6&     error_nc()      {return state_.err_;}
 

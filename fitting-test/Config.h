@@ -264,8 +264,6 @@ namespace Config
     return (Config::mag_b0*z*z + Config::mag_b1*z + Config::mag_c1)*(Config::mag_a*r*r + 1.f);
   }
 
-#ifdef USE_MATRIPLEX
-
   #ifndef MPT_SIZE
     #if defined(__MIC__) || defined(__AVX512F__)
       #define MPT_SIZE 16
@@ -279,9 +277,6 @@ namespace Config
   #ifndef THREAD_BINDING
   #define THREAD_BINDING spread
   #endif
-
-#endif
-
 };
 
 #endif 

@@ -1,6 +1,5 @@
 #include "computeChi2_kernels.h"
 
-#include "GPlex.h"
 #include "kalmanUpdater_kernels.h"
 #include "gpu_utils.h"
 

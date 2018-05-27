@@ -22,7 +22,7 @@ LDFLAGS_CU += -lnvToolsExt
 # -- Works only for CUDA_VERSION >= 5
 # TODO: Clean the "-I.. -std=c++11"
 ${CU_OBJS}: %.o: %.cu
-	${NV} --device-c -o $@ $< -I. -std=c++11 -DUSE_MATRIPLEX \
+	${NV} --device-c -o $@ $< -I. -std=c++11 \
 		-Itrove ${NVCCFLAGS} -Wno-deprecated-declarations \
 		-lineinfo -g --ptxas-options="-v -flcm=ca"
 # --keep --keep-dir ptxs

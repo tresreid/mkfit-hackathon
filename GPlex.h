@@ -6,13 +6,13 @@
 
 #include "gpu_utils.h"
 
-namespace Matriplex
+namespace GPlexBase
 {
 typedef int idx_t;
 //------------------------------------------------------------------------------
 
 template<typename T, idx_t D1, idx_t D2, idx_t N>
-class Matriplex
+class GPlexBase
 {
 public:
    typedef T value_type;
@@ -25,7 +25,7 @@ public:
       kCols = D2,
       /// return no of elements: rows*columns
       kSize = D1 * D2,
-      /// size of the whole matriplex
+      /// size of the whole GPlexBase
       kTotSize = N * kSize
    };
 
@@ -41,7 +41,7 @@ public:
 };
 
 
-template<typename T, idx_t D1, idx_t D2, idx_t N> using MPlex = Matriplex<T, D1, D2, N>;
+template<typename T, idx_t D1, idx_t D2, idx_t N> using GPlexB = GPlexBase<T, D1, D2, N>;
 }
 
 //#include "gpu_constants.h"
@@ -56,14 +56,13 @@ __device__ __constant__ static int gplexSymOffsets[7][36] =
   { 0, 1, 3, 6, 10, 15, 1, 2, 4, 7, 11, 16, 3, 4, 5, 8, 12, 17, 6, 7, 8, 9, 13, 18, 10, 11, 12, 13, 14, 19, 15, 16, 17, 18, 19, 20 }
 };
 
-constexpr Matriplex::idx_t NN =  8; // "Length" of MPlex.
+constexpr GPlexBase::idx_t NN =  8; // "Length" of GPlexB.
 
-constexpr Matriplex::idx_t LL =  6; // Dimension of large/long  MPlex entities
-constexpr Matriplex::idx_t HH =  3; // Dimension of small/short MPlex entities
+constexpr GPlexBase::idx_t LL =  6; // Dimension of large/long  GPlexB entities
+constexpr GPlexBase::idx_t HH =  3; // Dimension of small/short GPlexB entities
 
-typedef Matriplex::Matriplex<float, LL, LL, NN>   MPlexLL;
+typedef GPlexBase::GPlexBase<float, LL, LL, NN>   GPlexBLL;
 
-// GPU implementation of a Matriplex-like structure
 // The number of tracks is the fast dimension and is padded in order to have
 // consecutive and aligned memory accesses. For cached reads, this result in a
 // single memory transaction for the 32 threads of a warp to access 32 floats.
@@ -100,13 +99,13 @@ struct GPlex {
   //cudaMemcpy2D(d_msErr.ptr, d_msErr.pitch, msErr.fArray, N*sizeof(T),
                //N*sizeof(T), HS, cudaMemcpyHostToDevice);
 
-  void copyFromHost(const M& mplex) {
-    cudaMemcpy2D(ptr, pitch, mplex.fArray, N*sizeof(T),
+  void copyFromHost(const M& gplex) {
+    cudaMemcpy2D(ptr, pitch, gplex.fArray, N*sizeof(T),
                  N*sizeof(T), kSize, cudaMemcpyHostToDevice);
     cudaCheckError();
   }
-  void copyToHost(M& mplex) {
-    cudaMemcpy2D(mplex.fArray, N*sizeof(T), ptr, pitch,
+  void copyToHost(M& gplex) {
+    cudaMemcpy2D(gplex.fArray, N*sizeof(T), ptr, pitch,
                  N*sizeof(T), kSize, cudaMemcpyDeviceToHost);
     cudaCheckError();
   }
@@ -128,7 +127,7 @@ struct GPlexSym : GPlex<M> {
   //__device__ T  operator()(int n, int i, int j) const { return ptr[n + i*stride]; }
 };
 
-using GPlexLL = GPlex<MPlexLL>;
+using GPlexLL = GPlex<GPlexBLL>;
 
 template <typename M>
 struct GPlexReg {
@@ -156,5 +155,5 @@ struct GPlexReg {
   T arr[M::kSize];
 };
 
-using GPlexRegLL = GPlexReg<MPlexLL>;
+using GPlexRegLL = GPlexReg<GPlexBLL>;
 #endif  // _GPLEX_H_

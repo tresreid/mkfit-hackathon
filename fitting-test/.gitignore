@@ -11,8 +11,6 @@ log*
 *.optrpt
 *.gdb_history
 main
-main-mic
-auto-matriplex
 .*swp
 .*swo
 slurm-[0-9]*.out

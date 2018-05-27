@@ -19,8 +19,6 @@ __device__ __constant__ static int gplexSymOffsets[7][36] =
   { 0, 1, 3, 6, 10, 15, 1, 2, 4, 7, 11, 16, 3, 4, 5, 8, 12, 17, 6, 7, 8, 9, 13, 18, 10, 11, 12, 13, 14, 19, 15, 16, 17, 18, 19, 20 }
 };
 
-
-// GPU implementation of a Matriplex-like structure
 // The number of tracks is the fast dimension and is padded in order to have
 // consecutive and aligned memory accesses. For cached reads, this result in a
 // single memory transaction for the 32 threads of a warp to access 32 floats.
@@ -57,13 +55,13 @@ struct GPlex {
   //cudaMemcpy2D(d_msErr.ptr, d_msErr.pitch, msErr.fArray, N*sizeof(T),
                //N*sizeof(T), HS, cudaMemcpyHostToDevice);
 
-  void copyAsyncFromHost(cudaStream_t& stream, const M& mplex) {
-    cudaMemcpy2DAsync(ptr, pitch, mplex.fArray, N*sizeof(T),
+  void copyAsyncFromHost(cudaStream_t& stream, const M& gplex) {
+    cudaMemcpy2DAsync(ptr, pitch, gplex.fArray, N*sizeof(T),
                       N*sizeof(T), kSize, cudaMemcpyHostToDevice, stream);
     cudaCheckError();
   }
-  void copyAsyncToHost(cudaStream_t& stream, M& mplex) {
-    cudaMemcpy2DAsync(mplex.fArray, N*sizeof(T), ptr, pitch,
+  void copyAsyncToHost(cudaStream_t& stream, M& gplex) {
+    cudaMemcpy2DAsync(gplex.fArray, N*sizeof(T), ptr, pitch,
                       N*sizeof(T), kSize, cudaMemcpyDeviceToHost, stream);
     cudaCheckError();
   }
@@ -105,7 +103,7 @@ using GPlexQI = GPlex<MPlexQI>;
 using GPlexQB = GPlex<MPlexQB>;
 
 const int GPlexHitIdxMax = 16;  // FIXME: copied and past from MkFitter.h
-using GPlexHitIdx = GPlex<Matriplex::Matriplex<int, GPlexHitIdxMax, 1, MPT_SIZE>>;
+using GPlexHitIdx = GPlex<GPlexBase::GPlexBase<int, GPlexHitIdxMax, 1, MPT_SIZE>>;
 
 template <typename M>
 struct GPlexReg {

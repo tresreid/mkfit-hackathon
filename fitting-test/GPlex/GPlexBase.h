@@ -1,15 +1,15 @@
-#ifndef Matriplex_H
-#define Matriplex_H
+#ifndef GPlexBase_H
+#define GPlexBase_H
 
-#include "MatriplexCommon.h"
+#include "GPlexBaseCommon.h"
 
-namespace Matriplex
+namespace GPlexBase
 {
 
 //------------------------------------------------------------------------------
 
 template<typename T, idx_t D1, idx_t D2, idx_t N>
-class Matriplex
+class GPlexBase
 {
 public:
    typedef T value_type;
@@ -22,15 +22,12 @@ public:
       kCols = D2,
       /// return no of elements: rows*columns
       kSize = D1 * D2,
-      /// size of the whole matriplex
+      /// size of the whole GPlexBase
       kTotSize = N * kSize
    };
 
    T fArray[kTotSize] __attribute__((aligned(64)));
 };
-
-
-template<typename T, idx_t D1, idx_t D2, idx_t N> using MPlex = Matriplex<T, D1, D2, N>;
 }
 
 #endif

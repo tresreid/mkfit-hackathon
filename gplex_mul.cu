@@ -131,7 +131,7 @@ __global__ void reg_mult_kn(const RESTRICT GPlexNM a, const RESTRICT GPlexMP b, 
 
 bool check(int N, GPlexLL c)
 {
-  MPlexLL h[N];
+  GPlexBLL h[N];
   const float eps = 1e-30;
   c.copyToHost(h[0]);
   return (std::abs(h[0].At(0,0,0) - h[1].At(1,0,0)) < eps) && (std::abs(h[0].At(0,0,0) - 6.0f) < eps);

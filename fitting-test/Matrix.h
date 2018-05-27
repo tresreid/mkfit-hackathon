@@ -68,47 +68,42 @@ inline void sincos4(const float x, float& sin, float& cos)
 }
 //==============================================================================
 
-// This ifdef needs to be changed to something like "use matriplex" and/or
-// "is icc" as we can only do vectorization with icc now.
-
-#ifdef USE_MATRIPLEX
-
-  #ifdef __INTEL_COMPILER
-    #define ASSUME_ALIGNED(a, b) __assume_aligned(a, b)
-  #else
-    #define ASSUME_ALIGNED(a, b) a = static_cast<decltype(a)>(__builtin_assume_aligned(a, b))
-  #endif
-
-  #include "Matriplex/MatriplexSym.h"
-
-  constexpr Matriplex::idx_t NN =  MPT_SIZE; // "Length" of MPlex.
-
-  constexpr Matriplex::idx_t LL =  6; // Dimension of large/long  MPlex entities
-  constexpr Matriplex::idx_t HH =  3; // Dimension of small/short MPlex entities
-
-  typedef Matriplex::Matriplex<float, LL, LL, NN>   MPlexLL;
-  typedef Matriplex::Matriplex<float, LL,  1, NN>   MPlexLV;
-  typedef Matriplex::MatriplexSym<float, LL,  NN>   MPlexLS;
-
-  typedef Matriplex::Matriplex<float, HH, HH, NN>   MPlexHH;
-  typedef Matriplex::Matriplex<float, HH,  1, NN>   MPlexHV;
-  typedef Matriplex::MatriplexSym<float, HH,  NN>   MPlexHS;
-
-  typedef Matriplex::Matriplex<float, 2,  2, NN>    MPlex22;
-  typedef Matriplex::Matriplex<float, 2,  1, NN>    MPlex2V;
-  typedef Matriplex::MatriplexSym<float,  2, NN>    MPlex2S;
-
-  typedef Matriplex::Matriplex<float, LL, HH, NN>   MPlexLH;
-  typedef Matriplex::Matriplex<float, HH, LL, NN>   MPlexHL;
-
-  typedef Matriplex::Matriplex<float, LL,  2, NN>   MPlexL2;
-
-  typedef Matriplex::Matriplex<float, 1, 1, NN>     MPlexQF;
-  typedef Matriplex::Matriplex<int,   1, 1, NN>     MPlexQI;
-
-  typedef Matriplex::Matriplex<bool,  1, 1, NN>     MPlexQB;
-
+#ifdef __INTEL_COMPILER
+  #define ASSUME_ALIGNED(a, b) __assume_aligned(a, b)
+#else
+  #define ASSUME_ALIGNED(a, b) a = static_cast<decltype(a)>(__builtin_assume_aligned(a, b))
 #endif
+
+#include "immintrin.h"
+#include "GPlex/GPlexBaseSym.h"
+
+constexpr GPlexBase::idx_t NN =  MPT_SIZE; // "Length" of MPlex.
+
+constexpr GPlexBase::idx_t LL =  6; // Dimension of large/long  MPlex entities
+constexpr GPlexBase::idx_t HH =  3; // Dimension of small/short MPlex entities
+
+typedef GPlexBase::GPlexBase<float, LL, LL, NN>   MPlexLL;
+typedef GPlexBase::GPlexBase<float, LL,  1, NN>   MPlexLV;
+typedef GPlexBase::GPlexBaseSym<float, LL,  NN>   MPlexLS;
+
+typedef GPlexBase::GPlexBase<float, HH, HH, NN>   MPlexHH;
+typedef GPlexBase::GPlexBase<float, HH,  1, NN>   MPlexHV;
+typedef GPlexBase::GPlexBaseSym<float, HH,  NN>   MPlexHS;
+
+typedef GPlexBase::GPlexBase<float, 2,  2, NN>    MPlex22;
+typedef GPlexBase::GPlexBase<float, 2,  1, NN>    MPlex2V;
+typedef GPlexBase::GPlexBaseSym<float,  2, NN>    MPlex2S;
+
+typedef GPlexBase::GPlexBase<float, LL, HH, NN>   MPlexLH;
+typedef GPlexBase::GPlexBase<float, HH, LL, NN>   MPlexHL;
+
+typedef GPlexBase::GPlexBase<float, LL,  2, NN>   MPlexL2;
+
+typedef GPlexBase::GPlexBase<float, 1, 1, NN>     MPlexQF;
+typedef GPlexBase::GPlexBase<int,   1, 1, NN>     MPlexQI;
+
+typedef GPlexBase::GPlexBase<bool,  1, 1, NN>     MPlexQB;
+
 
 //==============================================================================
 

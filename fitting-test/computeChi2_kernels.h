@@ -2,7 +2,7 @@
 #define _COMPUTE_CHI2_KERNELS_H_
 
 #include "HitStructuresCU.h"
-#include "GPlex.h"
+#include "GPlex/GPlex.h"
 #include "GeometryCU.h"
 
 
