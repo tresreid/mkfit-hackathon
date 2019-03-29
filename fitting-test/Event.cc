@@ -48,13 +48,34 @@ Event::Event(const Geometry& g, Validation& v, int evtID, int threads) : geom_(g
   layerHits_.resize(Config::nLayers);
   segmentMap_.resize(Config::nLayers);
   cuFitters_.resize(threads);
-  for (auto& fitter : cuFitters_) {
+  cuBuilders_.resize(threads);
+  for (int i = 0; i < threads; ++i) {
     constexpr int gplex_width = 20000;
-    fitter.reset(new FitterCU<float>(gplex_width));
-    fitter.get()->allocateDevice();
-    fitter.get()->allocate_extra_addBestHit();
-    fitter.get()->createStream();
-    fitter.get()->setNumberTracks(gplex_width);
+
+    cuFitters_[i].reset(new FitterCU<float>(gplex_width));
+    auto fitter = cuFitters_[i].get();
+
+    fitter->allocateDevice();
+    fitter->allocate_extra_addBestHit();
+    fitter->allocate_extra_combinatorial();
+    fitter->createStream();
+    fitter->setNumberTracks(gplex_width);
+
+    cuBuilders_[i].reset(new BuilderCU(fitter));
+    auto builder = cuBuilders_[i].get();
+
+    builder->allocateGeometry(geom_);
+  }
+}
+
+Event::~Event()
+{
+  for (auto& fp : cuFitters_) {
+    auto fitter = fp.get();
+    fitter->freeDevice();
+    fitter->free_extra_addBestHit();
+    fitter->free_extra_combinatorial();
+    fitter->destroyStream();
   }
 }
 
@@ -161,6 +182,10 @@ void Event::Segment()
   } // end loop over layers
 
   resetLayerHitMap(true);
+}
+
+void Event::Find()
+{
 }
 
 void Event::Fit()

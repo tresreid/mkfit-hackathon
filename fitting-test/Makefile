@@ -45,14 +45,11 @@ ifeq ($(filter clean-local clean distclean, ${MAKECMDGOALS}),)
 include ${DEPS}
 endif
 
-clean-local:
+clean:
 	-rm -f ${EXES} *.d *.o *.om *.so
 	-rm -rf main.dSYM
 
-clean: clean-local
-	cd mkFit && ${MAKE} clean
-
-distclean: clean-local
+distclean: clean
 	-rm -f *.optrpt
 
 main: ${AUTO_TGTS} ${ALLOBJS}

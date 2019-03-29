@@ -3,6 +3,7 @@
 
 #include <cuda_runtime.h>
 #include <stdio.h>
+#include <iostream>
 
 #include "gpu_utils.h"
 
@@ -31,13 +32,17 @@ public:
 
    T fArray[kTotSize] __attribute__((aligned(64)));
 
-   const T& ConstAt(idx_t n, idx_t i, idx_t j) const { return fArray[(i * D2 + j) * N + n]; }
 
-   T& At(idx_t n, idx_t i, idx_t j) { return fArray[(i * D2 + j) * N + n]; }
+   __host__ __device__ T  operator[](idx_t xx) const { return fArray[xx]; }
+   __host__ __device__ T& operator[](idx_t xx)       { return fArray[xx]; }
 
-   T& operator()(idx_t n, idx_t i, idx_t j) { return fArray[(i * D2 + j) * N + n]; }
-   const T& operator()(idx_t n, idx_t i, idx_t j) const { return fArray[(i * D2 + j) * N + n]; }
+   __host__ __device__ T ConstAt(idx_t n, idx_t i, idx_t j) const { return fArray[(i * D2 + j) * N + n]; }
+   __host__ __device__ T& At(idx_t n, idx_t i, idx_t j) { return fArray[(i * D2 + j) * N + n]; }
 
+   __host__ __device__ T  operator()(idx_t n, idx_t i, idx_t j) const { return fArray[(i * D2 + j) * N + n]; }
+   __host__ __device__ T& operator()(idx_t n, idx_t i, idx_t j) { return fArray[(i * D2 + j) * N + n]; }
+
+   size_t size() const { return kTotSize; }
 };
 
 
@@ -69,6 +74,7 @@ typedef GPlexBase::GPlexBase<float, LL, LL, NN>   GPlexBLL;
 // See:
 // http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-memory-3-0
 // In practice, The number of tracks (ntracks) is set to be MPT_SIZE
+
 template <typename M>
 struct GPlex { 
   using T = typename M::value_type;
@@ -81,17 +87,32 @@ struct GPlex {
   T* ptr;
   size_t pitch, stride, N;
 
-  __device__ T  operator[](int xx) const { return ptr[xx]; }
-  __device__ T& operator[](int xx)       { return ptr[xx]; }
+  __host__ __device__ T  operator[](int xx) const { return ptr[xx]; }
+  __host__ __device__ T& operator[](int xx)       { return ptr[xx]; }
 
-  __device__ T& operator()(int n, int i, int j)       { return ptr[n + (i*kCols + j)*stride]; }
-  __device__ T  operator()(int n, int i, int j) const { return ptr[n + (i*kCols + j)*stride]; }
+  __host__ __device__ T  operator()(int n, int i, int j) const { return ptr[n + (i*kCols + j)*stride]; }
+  __host__ __device__ T& operator()(int n, int i, int j)       { return ptr[n + (i*kCols + j)*stride]; }
+
+  T* Ptr() { return ptr; }
 
   void allocate(size_t ntracks) {
     N = ntracks;
     cudaMallocPitch((void**)&ptr, &pitch, N*sizeof(T), kSize);
     stride = pitch/sizeof(T);  // Number of elements
+    //std::cout << "Stride: " << stride << " Pitch: " << pitch << " wxh " << N*sizeof(T) << " x " << kSize << " = " << N*sizeof(T)*kSize << std::endl;
   }
+
+  void allocateManaged(size_t ntracks, bool readMostly = false) {
+    N = ntracks;
+    cudaMallocManaged((void**) &ptr, N*sizeof(T)*kSize);
+    if (readMostly) {
+      cudaMemAdvise(ptr, N*sizeof(T)*kSize, cudaMemAdviseSetReadMostly, 0);
+    }
+    pitch = N*sizeof(T);
+    stride = N;  // Number of elements
+    //std::cout << "Stride: " << stride << " Pitch: " << pitch << " wxh " << N*sizeof(T) << " x " << kSize << " = " << N*sizeof(T)*kSize << std::endl;
+  }
+
   void free() {
     cudaFree(ptr);
     N = 0; pitch = 0; stride = 0;
@@ -109,6 +130,7 @@ struct GPlex {
                  N*sizeof(T), kSize, cudaMemcpyDeviceToHost);
     cudaCheckError();
   }
+  size_t size() const { return N*kSize; }
 };
 
 

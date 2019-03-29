@@ -3,13 +3,90 @@
 #include "GeometryCU.h"
 #include "reorganize_gplex.h"
 #include "fittracks_kernels.h"
-//#include "build_tracks_kernels.h"
+#include "build_tracks_kernels.h"
 
-//#include "clone_engine_kernels.h"
-//#include "clone_engine_kernels_seed.h"
+#include "clone_engine_kernels.h"
+#include "clone_engine_kernels_seed.h"
 
 #include "Track.h"
 
+template <typename T>
+void FitterCU<T>::FindTracksInLayers(LayerOfHitsCU *layers, 
+                                     EventOfCombCandidatesCU& event_of_cands_cu,
+                                     GeometryCU &geom, bool seed_based)
+{
+  auto f = seed_based ? findInLayers_wrapper_seed : findInLayers_wrapper;
+
+  //findInLayers_wrapper(stream, layers, event_of_cands_cu,
+  //findInLayers_wrapper_seed(stream, layers, event_of_cands_cu,
+  f (stream, layers, event_of_cands_cu,
+     d_XHitSize, d_XHitArr, d_Err_iP, d_par_iP,
+     d_msErr_arr, d_msPar_arr, d_Err_iC, d_par_iC,
+     d_Chi2, d_HitsIdx_arr, d_inChg, d_Label,
+     d_SeedIdx, d_CandIdx, d_Valid, geom, d_maxSize, N);
+}
+
+template <typename T>
+void FitterCU<T>::UpdateWithLastHit(LayerOfHitsCU& layer, int ilay, int N)
+{
+  UpdateWithLastHit_wrapper(stream, layer, d_HitsIdx[ilay],
+     d_msPar[ilay], d_msErr[ilay], d_par_iP, d_Err_iP, d_par_iC, d_Err_iC, N); 
+}
+
+template <typename T>
+void FitterCU<T>::UpdateWithLastHit_standalone(
+    LayerOfHitsCU& layer_cu, MPlexQI& HitsIdx, 
+    MPlexLS &Err_iP, MPlexLV& Par_iP, MPlexQI &Chg,
+    MPlexHV& msPar, MPlexHS& msErr, 
+    MPlexLS &Err_iC, MPlexLV& Par_iC,
+    int Nhits, int N_proc)
+{
+  d_HitsIdx[Nhits-1].copyAsyncFromHost(stream, HitsIdx);
+  d_Err_iP.copyAsyncFromHost(stream, Err_iP);
+  d_par_iP.copyAsyncFromHost(stream, Par_iP);
+  d_msErr[Nhits-1].copyAsyncFromHost(stream, msErr);
+  d_msPar[Nhits-1].copyAsyncFromHost(stream, msPar);
+
+  UpdateWithLastHit_wrapper(stream, layer_cu, d_HitsIdx[Nhits-1],
+     d_msPar[Nhits-1], d_msErr[Nhits-1], d_par_iP, d_Err_iP, d_par_iC, d_Err_iC, N_proc); 
+
+  d_par_iC.copyAsyncToHost(stream, Par_iC);
+  d_Err_iC.copyAsyncToHost(stream, Err_iC);
+  d_msErr[Nhits-1].copyAsyncToHost(stream, msErr);
+  d_msPar[Nhits-1].copyAsyncToHost(stream, msPar);
+
+  cudaStreamSynchronize(stream);
+}
+template <typename T>
+void FitterCU<T>::GetHitFromLayer_standalone(LayerOfHitsCU& layer_cu,
+    MPlexQI& HitsIdx, MPlexHV& msPar, MPlexHS& msErr, int hit_idx, int N)
+{
+  d_HitsIdx[hit_idx].copyAsyncFromHost(stream, HitsIdx);
+
+  getHitFromLayer_wrappper(stream, layer_cu, d_HitsIdx[hit_idx], 
+      d_msPar[hit_idx], d_msErr[hit_idx], N);
+
+  d_msErr[hit_idx].copyAsyncToHost(stream, msErr);
+  d_msPar[hit_idx].copyAsyncToHost(stream, msPar);
+}
+template <typename T>
+void FitterCU<T>::UpdateMissingHits_standalone(
+    MPlexLS& Err_iP, MPlexLV& Par_iP, 
+    MPlexLS& Err_iC, MPlexLV& Par_iC, 
+    MPlexQI& HitsIdx, 
+    int hit_idx, int N)
+{
+  d_HitsIdx[hit_idx].copyAsyncFromHost(stream, HitsIdx);
+  d_Err_iP.copyAsyncFromHost(stream, Err_iP);
+  d_par_iP.copyAsyncFromHost(stream, Par_iP);
+
+  UpdateMissingHits_wrapper(stream, d_HitsIdx[hit_idx],
+      d_par_iP, d_Err_iP, d_par_iC, d_Err_iC, N);
+
+  d_Err_iC.copyAsyncToHost(stream, Err_iC);
+  d_par_iC.copyAsyncToHost(stream, Par_iC);
+  cudaStreamSynchronize(stream);
+}
 
 template <typename T>
 void FitterCU<T>::setNumberTracks(const idx_t Ntracks) {
@@ -105,7 +182,6 @@ void FitterCU<T>::propagationMerged(const int hit_idx) {
                       d_par_iP, d_Err_iP, false, N);
 }
 
-
 // FIXME: Temporary. Separate allocations / transfers
 template <typename T>
 void FitterCU<T>::allocate_extra_addBestHit() {
@@ -136,10 +212,41 @@ void FitterCU<T>::free_extra_addBestHit() {
   d_XHitPos.free(); cudaCheckError();
 }
 
+
+template <typename T>
+void FitterCU<T>::allocate_extra_combinatorial() {
+  d_SeedIdx.allocate(Nalloc);
+  d_CandIdx.allocate(Nalloc);
+  d_Valid.allocate(Nalloc);
+}
+
+
+template <typename T>
+void FitterCU<T>::free_extra_combinatorial() {
+  d_SeedIdx.free();
+  d_CandIdx.free();
+  d_Valid.free();
+}
+
+
 template <typename T>
 void FitterCU<T>::setHitsIdxToZero(const int hit_idx) {
   cudaMemset(d_HitsIdx[hit_idx].ptr, 0, Nalloc*sizeof(int));
 }
+
+template <typename T>
+void FitterCU<T>::addBestHit(EventOfHitsCU &event, GeometryCU &geom_cu,
+                             EventOfCandidatesCU &event_of_cands_cu) {
+    findBestHit_wrapper(stream, event.m_layers_of_hits.data(),
+                        event_of_cands_cu,
+                        d_XHitSize, d_XHitArr,
+                        d_Err_iP, d_par_iP, 
+                        d_msErr_arr, d_msPar_arr,
+                        d_Err_iC, d_par_iC,
+                        d_Chi2, d_HitsIdx_arr,
+                        d_inChg, d_Label, geom_cu,
+                        d_maxSize, N);
+}   
 
 template <typename T>
 void FitterCU<T>::InputTracksAndHitIdx(const EtaBinOfCandidatesCU &etaBin,
@@ -181,6 +288,8 @@ void FitterCU<T>::propagateTracksToR(const float radius, const int N) {
                                  radius, d_Err_iP, d_par_iP, N); 
 }
 
+
+#if 1
 template <typename T>
 void FitterCU<T>::propagateTracksToR_standalone(const float radius, const int N,
     const MPlexLS& Err_iC, const MPlexLV& Par_iC, const MPlexQI& inChg, 
@@ -237,3 +346,99 @@ void FitterCU<T>::FitTracks(Track *tracks_cu, int num_tracks,
   cudaEventDestroy(start);
   cudaEventDestroy(stop);
 }
+#else
+template <typename T>
+void FitterCU<T>::FitTracks(MPlexQI &Chg, MPlexLV& par_iC, MPlexLS& err_iC,
+                            MPlexHV* msPar, MPlexHS* msErr, int Nhits,
+                            std::vector<Track> &tracks, int beg, int end,
+                            std::vector<HitVec> &layerHits) {
+  float etime;
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+
+  //launch everything in a stream to enable concurrent execution of events
+  createStream();
+
+  // allocateDevice();  -> moved to mkFit/mkFit.cc
+
+  setNumberTracks(end-beg);
+
+  Track *tracks_cu;
+  cudaMalloc((void**)&tracks_cu, tracks.size()*sizeof(Track));
+  cudaMemcpy(tracks_cu, &tracks[0], tracks.size()*sizeof(Track), cudaMemcpyHostToDevice);
+  allocate_extra_addBestHit();
+
+  InputTracksAndHitsCU_wrapper(stream, tracks_cu, d_Err_iC, d_par_iC, d_inChg,
+                               d_Chi2, d_Label, d_HitsIdx_arr, beg, end, false, N);
+
+
+  //d_inChg.copyAsyncFromHost(stream, Chg);
+  //d_par_iC.copyAsyncFromHost(stream, par_iC);
+  //d_Err_iC.copyAsyncFromHost(stream, err_iC);
+
+  cudaEventRecord(start, 0);
+ 
+  double total_reorg = 0.;
+  for (int hi = 0; hi < Nhits; ++hi)
+  {
+    // Switch outPut and inPut parameters and errors
+    // similar to iC <-> iP in the CPU code.
+    d_par_iP.copyAsyncFromDevice(stream, d_par_iC); 
+    d_Err_iP.copyAsyncFromDevice(stream, d_Err_iC);
+    
+#if 0
+    double time_input = dtime();
+    int itrack;
+    omp_set_num_threads(Config::numThreadsReorg);
+#pragma omp parallel for
+    for (int i = beg; i < end; ++i) {
+      itrack = i - beg;
+      Track &trk = tracks[i];
+
+      const int hidx = trk.getHitIdx(hi);
+      const Hit &hit = layerHits[hi][hidx];
+
+      msErr[hi].CopyIn(itrack, hit.errArray());
+      msPar[hi].CopyIn(itrack, hit.posArray());
+    }
+    total_reorg += (dtime() - time_input)*1e3;
+#endif
+
+    d_msPar[hi].copyAsyncFromHost(stream, msPar[hi]);
+    d_msErr[hi].copyAsyncFromHost(stream, msErr[hi]);
+
+    propagationMerged(hi);
+    //MPlexLS  err_iP;
+    //MPlexLV par_iP;
+    //d_par_iC.copyAsyncToHost(stream, par_iC);
+    //d_par_iP.copyAsyncToHost(stream, par_iP);
+    //d_Err_iP.copyAsyncToHost(stream, err_iP);
+    //propagation_wrapper(stream, d_msPar[hi], d_Err_iC, d_par_iC, d_inChg,
+                      //d_par_iP, d_errorProp, d_Err_iP, N);
+    kalmanUpdateMerged(hi);
+    //fittracks_wrapper(stream, d_Err_iP, d_par_iP, d_msErr, d_msPar,
+                      //d_Err_iC, d_par_iC, d_errorProp, d_inChg,
+                      //hi, N);
+  }
+  cudaEventRecord(stop, 0);
+  cudaEventSynchronize(stop);
+
+  cudaEventElapsedTime(&etime, start, stop);
+  //std::cerr << "CUDA etime: " << etime << " ms.\n";
+  //std::cerr << "Total reorg: " << total_reorg << " ms.\n";
+  
+  free_extra_addBestHit();
+  cudaFree(tracks_cu);
+
+  d_par_iC.copyAsyncToHost(stream, par_iC);
+  d_Err_iC.copyAsyncToHost(stream, err_iC);
+  
+  cudaStreamSynchronize(stream);
+  // freeDevice(); -> moved to mkFit/mkFit.cc
+  destroyStream();
+
+  cudaEventDestroy(start);
+  cudaEventDestroy(stop);
+}
+#endif

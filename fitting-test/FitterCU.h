@@ -14,7 +14,7 @@
 #include "kalmanUpdater_kernels.h"
 #include "computeChi2_kernels.h"
 #include "index_selection_kernels.h"
-//#include "best_hit_kernels.h"
+#include "best_hit_kernels.h"
 
 #include <omp.h>
 #include <stdexcept>
@@ -49,7 +49,12 @@ class FitterCU {
 
   void allocate_extra_addBestHit();
   void free_extra_addBestHit();
+  void allocate_extra_combinatorial();
+  void free_extra_combinatorial();
   void setHitsIdxToZero(const int hit_idx);
+
+  void addBestHit(EventOfHitsCU& event, GeometryCU &geom_cu,
+                  EventOfCandidatesCU &event_of_cands_cu);
 
   void propagateTracksToR(const float radius, const int N);
   void propagateTracksToR_standalone(const float radius, const int N,
@@ -69,6 +74,28 @@ class FitterCU {
   void InputTracksAndHitIdxComb(const EtaBinOfCombCandidatesCU &etaBin,
       const int Nhits, const int beg, const int end, const bool inputProp);
 
+  //====================
+  // TEMP FCT; copy stuffs
+  //====================
+  void UpdateWithLastHit(LayerOfHitsCU& layer, int ilay, int N);
+  void GetHitFromLayer_standalone(LayerOfHitsCU& layer_cu,
+    MPlexQI& HitsIdx, MPlexHV& msPar, MPlexHS& msErr, int hit_idx, int N);
+  void UpdateMissingHits_standalone(
+      MPlexLS& Err_iP, MPlexLV& Par_iP, 
+      MPlexLS& Err_iC, MPlexLV& Par_iC, 
+      MPlexQI& HitsIdx, 
+      int hit_idx, int N);
+  void UpdateWithLastHit_standalone(
+      LayerOfHitsCU& layer_cu, MPlexQI& HitsIdx, 
+      MPlexLS &Err_iP, MPlexLV& Par_iP, MPlexQI &inChg,
+      MPlexHV& msPar, MPlexHS& msErr, 
+      MPlexLS &Err_iC, MPlexLV& Par_iC,
+      int Nhits, int N_proc);
+
+  void FindTracksInLayers(LayerOfHitsCU *layers, 
+                          EventOfCombCandidatesCU& event_of_cands_cu,
+                          GeometryCU &geom, bool seed_based=false);
+  
   //====================
  private:
   // N is the actual size, Nalloc should be >= N, as it is intended

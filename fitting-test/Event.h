@@ -7,6 +7,7 @@
 #include "BinInfoUtils.h"
 #include "Config.h"
 #include "FitterCU.h"
+#include "BuilderCU.h"
 
 #include <mutex>
 
@@ -21,6 +22,7 @@ typedef std::vector<HitID> HitIDVec;
 class Event {
 public:
   Event(const Geometry& g, Validation& v, int evtID, int threads = 1);
+  ~Event();
   void Reset(int evtID);
   void Simulate();
   void Segment();
@@ -45,6 +47,7 @@ public:
  public:
   int threads_;
   std::vector<std::unique_ptr<FitterCU<float>>> cuFitters_;
+  std::vector<std::unique_ptr<BuilderCU>> cuBuilders_;
   std::atomic<int> mcHitIDCounter_;
   std::vector<HitVec> layerHits_;
   MCHitInfoVec simHitsInfo_;
