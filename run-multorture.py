@@ -3,27 +3,31 @@
 from __future__ import print_function
 
 metrics = [
-    "flop_count_sp",
-    "flop_sp_efficiency",
-    "shared_store_transactions",
-    "shared_load_transactions",
-    "local_load_transactions",
-    "local_store_transactions",
     "gld_transactions",
-    "gst_transactions",
-    "gld_throughput",
-    "gst_throughput",
-    "gld_requested_throughput",
-    "gld_efficiency",
-    "gst_requested_throughput",
-    "gst_efficiency",
-    "l2_read_transactions",
-    "l2_write_transactions",
-    "l2_utilization",
-    "l1_cache_global_hit_rate",
-    "l1_shared_utilization",
-    "l2_l1_read_hit_rate"
-            ]
+    "flop_count_sp"
+]
+#metrics = [
+#    "flop_count_sp",
+#    "flop_sp_efficiency",
+#    "shared_store_transactions",
+#    "shared_load_transactions",
+#    "local_load_transactions",
+#    "local_store_transactions",
+#    "gld_transactions",
+#    "gst_transactions",
+#    "gld_throughput",
+#    "gst_throughput",
+#    "gld_requested_throughput",
+#    "gld_efficiency",
+#    "gst_requested_throughput",
+#    "gst_efficiency",
+#    "l2_read_transactions",
+#    "l2_write_transactions",
+#    "l2_utilization",
+#    "l1_cache_global_hit_rate",
+#    "l1_shared_utilization",
+#    "l2_l1_read_hit_rate"
+#            ]
 
 cmd_parts = [
     "nvprof",
@@ -41,21 +45,24 @@ timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
 output_fname = time.strftime("prof-%Y-%m-%d-%H%M%S.csv", time.localtime(now))
 
 # TODO: use subprocess instead
-import commands
-
+#import commands
+import subprocess
 # get git hash (does not check for local modifications though...)
-git_hash = commands.getoutput("git rev-parse HEAD")
+#git_hash = commands.getoutput("git rev-parse HEAD")
+git_hash = subprocess.getstatusoutput("git rev-parse HEAD")[1]
 
 # check if there were modified files
-status, dummy = commands.getstatusoutput("git diff --quiet")
-assert status in (0,256), "status was " + str(status)
+#status, dummy = commands.getstatusoutput("git diff --quiet")
+status, dummy = subprocess.getstatusoutput("git diff --quiet")
+assert status in (0,256,1), "status was " + str(status)
 
-if status == 256:
+if status == 256 or status == 1:
     git_hash += "+modif"
 
 # run the profiler
-output = commands.getoutput(" ".join(cmd_parts))
-
+#output = commands.getoutput(" ".join(cmd_parts))
+output = subprocess.Popen(" ".join(cmd_parts),shell=True,stderr=subprocess.PIPE, stdout=subprocess.PIPE, stdin=subprocess.PIPE,universal_newlines=True).communicate()[1]
+print(output)
 lines = output.splitlines()
 
 import re
@@ -87,9 +94,11 @@ while lines:
 #----------
 # parse CSV to produce some ASCII tables 
 #----------
-import cStringIO as StringIO
+#import cStringIO as StringIO
+import io
 import csv
-csv_buffer = StringIO.StringIO(csv_buffer)
+#csv_buffer = StringIO.StringIO(csv_buffer)
+csv_buffer = io.StringIO(csv_buffer)
 reader = csv.DictReader(csv_buffer)
 
 # first index is metric name
@@ -106,7 +115,7 @@ for line in reader:
 
 # print kernels ordered by selected metric
 
-for selected_metric in [ "gld_throughput", "flop_sp_efficiency"]:
+for selected_metric in metrics:#[ "gld_throughput", "flop_sp_efficiency"]:
     print(selected_metric + ":")
 
     def parse_func(item):
@@ -122,4 +131,8 @@ for selected_metric in [ "gld_throughput", "flop_sp_efficiency"]:
     print()
 
 print("wrote",output_fname)
-
+fout.close()
+import pandas as pd
+csv_dataframe = pd.read_csv(output_fname)
+csv_table = csv_dataframe[csv_dataframe['Invocations']==1000].pivot(index="Metric Name", columns='Kernel',values='Avg')
+csv_table.to_csv("avg_"+output_fname)
