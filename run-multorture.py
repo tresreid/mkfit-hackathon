@@ -61,11 +61,36 @@ if status == 256 or status == 1:
 
 # run the profiler
 #output = commands.getoutput(" ".join(cmd_parts))
+output1 = subprocess.Popen("nvprof --csv ./multorture ",shell=True,stderr=subprocess.PIPE, stdout=subprocess.PIPE, stdin=subprocess.PIPE,universal_newlines=True).communicate()[1]
+print(output1)
+lines1 = output1.splitlines()
 output = subprocess.Popen(" ".join(cmd_parts),shell=True,stderr=subprocess.PIPE, stdout=subprocess.PIPE, stdin=subprocess.PIPE,universal_newlines=True).communicate()[1]
 print(output)
 lines = output.splitlines()
 
 import re
+
+while lines1:
+    line = lines1.pop(0)
+    if re.match("==\d+== Profiling result:$", line):
+        break
+
+fout1 = open("profile_test.csv", "w")
+is_first = True
+csv_buffer = ""
+
+while lines1:
+    line = lines1.pop(0)
+    if "API calls" in line:
+        break
+    csv_buffer += line + "\n"
+
+    if is_first:
+        print('"time","git_hash",%s' % line, file = fout1)
+        is_first = False
+    else:
+        print('"%s","%s",%s' % (timestamp, git_hash,line), file = fout1)
+
 
 while lines:
     line = lines.pop(0)
@@ -82,6 +107,7 @@ csv_buffer = ""
 while lines:
     line = lines.pop(0)
 
+    line.replace("Name","Kernel")
     csv_buffer += line + "\n"
 
     if is_first:
@@ -134,5 +160,6 @@ print("wrote",output_fname)
 fout.close()
 import pandas as pd
 csv_dataframe = pd.read_csv(output_fname)
+prof_dataframe = pd.read_csv("profile_test.csv")
 csv_table = csv_dataframe[csv_dataframe['Invocations']==1000].pivot(index="Metric Name", columns='Kernel',values='Avg')
 csv_table.to_csv("avg_"+output_fname)
