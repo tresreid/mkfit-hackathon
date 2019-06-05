@@ -1,8 +1,13 @@
 #eigenopt = -Ieigen -I$(shell cd $$CMSSW_BASE && scram tool tag cuda INCLUDE)/crt --expt-relaxed-constexpr
+#eigenopt = -I../eigen_tests/eigen --expt-relaxed-constexpr
+#eigenopt = -I/mnt/data1/dsr/mkfit-hackathon/eigen --expt-relaxed-constexpr
 eigenopt = -Ieigen --expt-relaxed-constexpr
+
+
 objects = gplex_mul.o raw_mul.o eigen_mul.o gpu_utils.o multorture.o
 #arch = --gpu-architecture=compute_35
 arch = -arch=sm_70
+
 nvccflags = $(arch) $(cudainc) $(eigenopt) -O3 --std c++14
 
 multorture: $(objects)
@@ -16,10 +21,10 @@ gpu_utils.o: gpu_utils.cu gpu_utils.h
 
 
 %.o: %.cu
-	nvcc $(nvccflags) -I${CUBROOT} -I../eigen_tests/eigen -c $< -o $@  
+	nvcc $(nvccflags) -I${CUBROOT} -c $< -o $@  
 
 %.o: %.cc
-	nvcc $(nvccflags) -I${CUBROOT} -I../eigen_tests/eigen -c $< -o $@  
+	nvcc $(nvccflags) -I${CUBROOT} -c $< -o $@  
 
 clean:
 	rm -f *.o multorture
